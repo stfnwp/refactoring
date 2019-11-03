@@ -1,0 +1,354 @@
+/**
+ * RMT = Rechte Maustaste
+ * TODO 1 (Aus Einer langen Frunktion eine Klasse extrahieren)
+ *  Function Body markieren
+ *  RMT => Refactor => Extract => Object Method....
+ *  Create Inner Class, Name = 'SetupTeardownSurrounder'
+ *  Visibility: Private
+ *  Parameters: PageData pageData , boolean includeSuiteSetup
+ *  ==========================================================
+ *
+ *  TODO 2 (Instanzvariablen aus lokalen Variablen Extrahieren und im Konstruktor initialisieren)
+ *  Varialbe 'wikiPage' in invoke() Methode markieren
+ *  RMT => Refactor => Extract => Field....
+ *  'Choose Class to Introduce Field' => 'SetupTeardownSurrounder'
+ *  Doppelklick auf wikiPage.
+ *  wikiPage im Konstruktor initializieren:
+ *  dafür wikiPage = pageData.getWikiPage(); aus invoke in den 'SetupTeardownSurrounder' Konstruktor Body rein kopieren.
+ *  Die gleichen Schritte für 'StringBuffer content' durchführen
+ *  ==========================================================
+ *
+ *  TODO 3 (Eleminate Duplicate: Don't Repeate yourself! )
+ *  Die folgende Struktur kommt 4 mal vor, Ähnliche Varianten mit geringfügigem Unterschied:
+ *
+ *  WikiPagePath pagePath = wikiPage.getPageCrawler().getFullPath(suiteSetup);
+ *  String pagePathName = PathParser.render(pagePath);
+ *  content.append("!include -setup .").append(pagePathName).append("\n");
+ *
+ *  TODO 3 ( Eliminate Duplicate: Elminate differences and extract a new Variable )
+ *
+ *   Idee: Eliminate Differences and Extract a new Variable,
+ *   so that the three lines are parametric.
+ *
+ *   wikiPage.getPageCrawler() markieren
+ *   Rechte Maustaste => Refactor => Extract => Field.. Name := 'crawler
+ *   'crawler' im Konstrukor initializieren. crawler =  wikiPage.getPageCrawler();
+ *
+ *   Das gleiche für die String "setup" in content.append("!include -setup .")
+ *   "setup" markieren => RT => Refactor => Extract => Variable => Name = mode
+ *    'Replace all occurrences' auswählen.
+ *
+ *    Das gleiche für die String "teardown" in content.append("!include -setup .")
+ *    "setup" markieren => RT => Refactor => Extract => Variable => Name = mode
+ *    'Replace all occurrences' auswählen.
+ *    ==========================================================
+ *
+ *  TODO 4 ( Extract out the four repeating groups into a single function )
+ *
+ *  Markiere die ersten 3 Zeilen von dieser repeating groupsÖ
+ *
+ *  WikiPagePath pagePath = crawler.getFullPath(suiteSetup);
+ *  String pagePathName = PathParser.render(pagePath);
+ *  content.append("!include -" + mode + " .").append(pagePathName).append("\n");
+ *
+ *  RMT => Refactor => Extract Methode....
+ *  Name: includePage
+ *  Parameters:
+ *      String mode
+ *      WikiPage suiteSetup zu page ändern
+ *
+ *  IDE Message: Process Duplicate 1 of 3
+ *  Do You want to replace this occurrence?
+ *  => Replace 3 mal bestätigen
+ *  ==========================================================
+ *
+ *  TODO 5 ( Clean the extracted Function 'includePage' up )
+ *
+ *  1) z.B geschweifelte Klammer { } weg. sind überflüssig
+ *  2) String.format Methode benutzen.
+ *  content.append("!include -" + mode + " .").append(pagePathName).append("\n");
+ *  Ersetzten durch:
+ *  content.append(String.format("!include -%s .%s\n", mode, pagePathName))
+ *  ==========================================================
+ *
+ *  TODO 6 ( Eliminate die neue entstandene Repeating Structue)
+ *  WikiPage suiteSetup = PageCrowlerImpl.getInheritedPage(SuiteResponder.SUITE_SETUP_NAME, wikiPage);
+ *    if(suiteSetup != null)
+ *    includePage(mode, suiteSetup);
+ *
+ *    Dieser kommt auch 4 mal vor, in ähnliche Varianten mit 4 Instanzen
+ *
+ *    To eliminate Duplicate:
+ *    =======================
+ *    Wir müssen jedes Block "parameteric" machen,
+ *    in dem wir eine Variable raus extrahieren.
+ *    welche die Page name representiert:
+ *
+ *    'SuiteResponder.SUITE_SETUP_NAME' markieren
+ *    Refactor => Extract => Variable => pageName
+ *
+ *    Das gleiche tun wir für: "SetUp", "TearDown", SuiteResponder.SUITE_TEARDOWN_NAME
+ *    Nennen alle Variablen einfach: pageName
+ *
+ *    Anschließend können wir alle diese 'repeating version'
+ *    in eine einzige Funktion 'includeIfInherited' raus extrahieren:
+ *    Code Block markieren => Refactor => Extract => Method.. =>name: includeIfInherited
+ *    Die IDE erkennt, dass eine 'repeating structure' noch 3 mal existiert und fragt
+ *    " Do you want to replace this occurence" ?
+ *    4x Yes bestätigen.
+ *
+ *    Nun können wir die Variable pageName in dem
+ *    Aufruf : includeIfInherited(mode, pageName);
+ *    mit den Namen: 'SuiteResponder.SUITE_SETUP_NAME'
+ *    "SetUp", "TearDown", SuiteResponder.SUITE_TEARDOWN_NAME
+ *    und löschen wir String pageName Variable
+ *    Anschliessend entfernen wir unnötige { } von if
+ *  ==========================================================
+ *
+ *    TODO 7 ( Clean up includeIfInherited Function)
+ *
+ *    Nun können wir die Lesbarkeit von der privaten Funktion
+ *    includeIfInherited ein bisschen Verbesseren
+ *
+ *    z.B. die Variable Name suiteSetup umbennen.
+ *    'suiteSteup' markieren => Refactor => Rename => page
+ *    ==========================================================
+ *
+ *    TODO 8 (Inline local Varialbe 'mode' )
+ *    Mit der Variable 'mode' können wir das gleiche
+ *    machen wie mit der Variable String pageName
+ *    das heißt ersetzen wir die String mode mit
+ *    ihrem Wert in dem Aufruf includeIfInherited(mode, ...)
+ *    mode hat die Were: "setup" "TearDown"
+ *
+ *    Diese mal ersetzen wir sie nicht manuell sondern mit Refactoring
+ *    'mode' markieren => Refactor => Inline ...
+ *    Local Variable Inline: "Inline all references  and remove
+ *    the Variable (2 Occurences).
+ *
+ *    Anschließend löschen wir überflüssige { } wenn vorhanden!
+ *    ==========================================================
+ *
+ *    TODO 9 (Wichtige/Große Operationen in If-Statements in Funktionen extrahieren )
+ *
+ *    Jetzt können wir die Haupt Funktionalität/Operationen in separten
+ *    Funktionen mit sehr guten aussagekräftigen Namen raus extrahieren
+ *    und zwar jeweils das 'bode' von if(pageDate.hastAttribute("Test").
+ *
+ *    Zuerst extrahieren wir das erste if body
+ *    =================
+ *      if(includeSuiteSetup)
+ *         includeIfInherited("setup", SuiteResponder.SUITE_SETUP_NAME);
+ *      includeIfInherited("setup", "SetUp");
+ *
+ *   Also wir extrahieren das Block, welche die "setups" inkludiert
+ *   in eine Funktion "includeSetups". Dafür das Block markieren
+ *   RMT => Refactor => Extract => Method.... => includeSetups
+ *   Anschliessend löschen wir überflüssige {}
+ *
+ *
+ *  Analog dazu extrahieren wir den Code, der "teardowns" inkludiert
+ *  in eine Function "includeTeardowns" in dem wir den folgenden Block markieren>
+ *
+ *  includeIfInherited("teardown", "TearDown");
+ *       if(includeSuiteSetup)
+ *  includeIfInherited("teardown", SuiteResponder.SUITE_TEARDOWN_NAME);
+ *
+ *  RMT => Refactor => Extract => Method...=> Include Teardowns
+ *  Anschliessend löschen wir überflüssige {}
+ *  ==========================================================
+ *
+ *  TODO 10 (StringBuffer Code eliminieren )
+ *
+ *  Die StringBuffer variable wurde nur benutzt um
+ *  Strings aneinander anzuhängen, wir können sie
+ *  elimineren. Dafür lassen wir unsere hilfsfunktionen
+ *  String zurück lieferen und sie anschliessend in invoke mit "+" verketten
+ *
+ *  1) Wir ändern die Return-Value von includeIfInherited
+ *    von 'void' zu 'String' und lassen die Methode ein Exception werfen.
+ *    private String includeIfInherited(...) throws Exception {
+ *        return includePage(mode, page));
+ *    }
+ *
+ *  2) Wir ändern nun auch includePage(mode, page) von void zu String
+ *     private String includePage(mode, page) throws Exception {
+ *         // content.append(String.format("!include -%s .%s\n", mode, pagePathName));
+ *         return String.format("!include -%s .%s\n", mode, pagePathName));
+ *     }
+ *
+ *  3) Wir bennen die Variable StringBuffer content in 'String content' um.
+ *     buffer Variable markieren => RMT => Refactor => Rename => 'content'
+ *     und ändern Ihren Typen anschließend zu String. und passen folgenden Code
+ *      content = new StringBuffer(); zu content = "" ;
+ *
+ *  4) in includeSetups:  speichern und verketten wir das Ergebnis von includeIfInherited in Content
+ *
+ *      content += includeIfInherited("setup", SuiteResponder.SUITE_SETUP_NAME);
+ *      content +=      includeIfInherited("setup", "SetUp");
+ *
+ *
+ *  5)  Analog in includeTeardowns: speichern wir auch das Ergebnis von includeIfInherited
+ *      und verketten es in Content.
+ *
+ *       content += includeIfInherited("teardown", "TearDown");
+ *             if(includeSuiteSetup)
+ *                 content += includeIfInherited("teardown", SuiteResponder.SUITE_TEARDOWN_NAME);
+ *
+ *  6) Das Endergebnis in die invoke() mit "+" zusammen verketten.
+ *    wir ersetzen den Code: content.append(pageData.getContent());
+ *    durch                  content += pageData.getContent();
+ *
+ *     content += includeSetups();
+ *     content += includeTeardowns();
+ *
+ *  7) Dafür ändern wir den Rückgabetyp von includeTeardown von void zu String
+ *    wir  definieren eine locale Varialbe String teardown = "";
+ *
+ *     private String includeTeardowns() throws Exception{
+ *             String teardowns = "";
+ *             teardowns += includeIfInherited("teardown", "TearDown");
+ *             if(includeSuiteSetup)
+ *                 teardowns += includeIfInherited("teardown", SuiteResponder.SUITE_TEARDOWN_NAME);
+ *             return teardowns;
+ *         }
+ *
+ *
+ *  8) Das gleiche machen wir mit includeSetups.
+ *     Sinn ist, alle kleinen Funktionen in invoke() verketten.
+ *     In includeSetups() die lokale Variable String content definieren
+ *     content markieren => RMT => Rename => 'setups'
+ *
+ *
+ *  9) Jetzt ist die Logik von invoke() function klar und deutlich
+ *  wir können diesen Code noch weiter verfeinern, in dem wir
+ *  alle 'content-altering code' innerhalb eine einzige if-statment rein tun.
+ *  und die untere if-statment löschen, da sie beide gleich sind!
+ *  Anschliessend Code formatieren. Code markieren => Code => Reformat Code
+ *  ==========================================================
+ *
+ *  ToDo 11 (Extract the Predicate of the if Statement into a Method)
+ *
+ *  jetzt können wir das Prädikat, also den boolsche Ausdruck in
+ *  die if-Statment in der invoke() method in eine eigne Methode extrahieren:
+ *  if(pageData.hasAttribute("Test")
+ *
+ *  pageDate.hasAttribte("Test") markieren
+ *  RMT => Refactor => Extract => Method....=> name: istTestPage()
+ *
+ *  ToDo 11 (Extract the body of the if Statement into a method)
+ *  Also das Body von if(isTestPage()){
+ *       content += includeSetups();
+ *       content += pageData.getContent();
+ *       content += includeTeardowns();
+ *       pageData.setContent(content.toString());
+ *  }
+ *
+ *  markieren => RMT => Refactor => Extract => Method => 'surroundPageWithSetupsAndTeardowns'
+ *  Anschließend überflüssige { } löschen
+ *  ==========================================================
+ *
+ *  ToDo 12 (Rename the inner class and the invoke() function )
+ *
+ *  Die Invoke Function sagt uns jetzt genau, was er tut!
+ *  auch alle anderen Funktionen sagen was sie genau tun!
+ *  Denn alle sind: small, simple, well-names functions
+ *
+ *  Die innere Class umhüllt (surround) eine 'test page'
+ *  mit 'setups' und 'teardowns'
+ *
+ *  Wir nennen die innere Class TestableHtmlMaker zu 'SetupTeardownSurrounder' um
+ *  'TestableHtmlMaker' markieren => RMT => Refactor => Rename => 'SetupTeardownSurrounder'
+ *
+ *  Wir nnen die Methode invoke() zu surround() um
+ *  invoke() markieren => RMT => Refactor => Rename => 'surround'
+ *
+ *  Unser Code ist jetzt wie ein "Well-Written Prose"
+ */
+
+
+public class MakeHTML {
+
+    public static String testableHtml(PageData pageData, boolean includeSuiteSetup) throws Exception {
+        return new SetupTeardownSurrounder(pageData, includeSuiteSetup).invoke();
+    }
+
+    private static class SetupTeardownSurrounder {
+        private PageData pageData;
+        private boolean includeSuiteSetup;
+        private WikiPage wikiPage;
+        private String content;
+        private PageCrowlerImpl crawler;
+        // private String mode;
+
+
+        public SetupTeardownSurrounder(PageData pageData, boolean includeSuiteSetup) {
+            this.pageData = pageData;
+            this.includeSuiteSetup = includeSuiteSetup;
+            wikiPage = pageData.getWikiPage();
+            content = "";
+            crawler = wikiPage.getPageCrawler();
+        }
+
+        public String invoke() throws Exception {
+            if (isTestPage())
+                surroundPageWithSetupsAndTeardowns();
+            return pageData.getHtml();
+
+        }
+
+        private void surroundPageWithSetupsAndTeardowns() throws Exception {
+            content += includeSetups();
+            content += pageData.getContent();
+            content += includeTeardowns();
+            pageData.setContent(content.toString());
+        }
+
+        private boolean isTestPage() {
+            return pageData.hasAttribute("Test");
+        }
+
+
+        private String includeTeardowns() throws Exception {
+            String teardowns = "";
+            teardowns += includeIfInherited("teardown", "TearDown");
+            if (includeSuiteSetup)
+                teardowns += includeIfInherited("teardown", SuiteResponder.SUITE_TEARDOWN_NAME);
+            return teardowns;
+        }
+
+        private String includeSetups() throws Exception {
+            String setups = "";
+            if (includeSuiteSetup)
+                setups += includeIfInherited("setup", SuiteResponder.SUITE_SETUP_NAME);
+            setups += includeIfInherited("setup", "SetUp");
+            return setups;
+        }
+
+
+        private String includeIfInherited(String mode, String pageName) throws Exception {
+            WikiPage page = PageCrowlerImpl.getInheritedPage(pageName, wikiPage);
+            if (page != null)
+                return includePage(mode, page);
+            return "";
+        }
+
+        private String includePage(String mode, WikiPage suiteSetup) throws Exception {
+            WikiPagePath pagePath = crawler.getFullPath(suiteSetup);
+            String pagePathName = PathParser.render(pagePath);
+            // content.append(String.format("!include -%s .%s\n", mode, pagePathName));
+            return String.format("!include -%s .%s\n", mode, pagePathName);
+
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
